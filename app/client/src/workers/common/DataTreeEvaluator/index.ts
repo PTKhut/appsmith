@@ -787,7 +787,8 @@ export default class DataTreeEvaluator {
         isFirstTree: false,
         unevalUpdates,
         metaWidgets: metaWidgetIds,
-        noClone: true,
+        // should not clone evalTree unnessarily because it is anyway being overwritten in the subsequent statement hence set to true
+        shouldNotCloneUnevalTree: true,
       },
       configTree,
     );
@@ -929,12 +930,12 @@ export default class DataTreeEvaluator {
       isFirstTree: boolean;
       unevalUpdates: DataTreeDiff[];
       metaWidgets: string[];
-      noClone: any;
+      shouldNotCloneUnevalTree: boolean | undefined;
     } = {
       isFirstTree: true,
       unevalUpdates: [],
       metaWidgets: [],
-      noClone: false,
+      shouldNotCloneUnevalTree: false,
     },
     oldConfigTree: ConfigTree,
   ): {
@@ -942,7 +943,9 @@ export default class DataTreeEvaluator {
     evalMetaUpdates: EvalMetaUpdates;
     staleMetaIds: string[];
   } {
-    const tree = options.noClone ? oldUnevalTree : klona(oldUnevalTree);
+    const tree = options.shouldNotCloneUnevalTree
+      ? oldUnevalTree
+      : klona(oldUnevalTree);
     errorModifier.updateAsyncFunctions(
       tree,
       this.getConfigTree(),
@@ -1468,6 +1471,8 @@ export default class DataTreeEvaluator {
     // setting parseValue in dataTree
     set(currentTree, fullPropertyPath, parsedValue);
     // setting evalPropertyValue in unParsedEvalTree
+    // cloning evalPropertyValue because parsedValue and evalPropertyValue could be equal, they both could share the same reference
+    //hence we are cloning evalPropertyValue to seperate them
     set(this.getUnParsedEvalTree(), fullPropertyPath, klona(evalPropertyValue));
   }
 
