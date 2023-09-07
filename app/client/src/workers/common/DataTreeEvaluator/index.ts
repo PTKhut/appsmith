@@ -344,7 +344,8 @@ export default class DataTreeEvaluator {
     const evaluationOrder = this.sortedDependencies;
     // Evaluate
     const { evalMetaUpdates, evaluatedTree, staleMetaIds } = this.evaluateTree(
-      this.oldUnEvalTree,
+      //we need to deep clone oldUnEvalTree because evaluateTree will mutate it
+      klona(this.oldUnEvalTree),
       evaluationOrder,
       undefined,
       this.oldConfigTree,
@@ -781,14 +782,13 @@ export default class DataTreeEvaluator {
       evaluatedTree: newEvalTree,
       staleMetaIds,
     } = this.evaluateTree(
+      // should not clone evalTree unnessarily because it is anyways being overwritten in the subsequent statement
       this.evalTree,
       evaluationOrder,
       {
         isFirstTree: false,
         unevalUpdates,
         metaWidgets: metaWidgetIds,
-        // should not clone evalTree unnessarily because it is anyway being overwritten in the subsequent statement hence set to true
-        shouldNotCloneUnevalTree: true,
       },
       configTree,
     );
@@ -924,18 +924,16 @@ export default class DataTreeEvaluator {
   }
 
   evaluateTree(
-    oldUnevalTree: DataTree,
+    dataTree: DataTree,
     evaluationOrder: Array<string>,
     options: {
       isFirstTree: boolean;
       unevalUpdates: DataTreeDiff[];
       metaWidgets: string[];
-      shouldNotCloneUnevalTree: boolean | undefined;
     } = {
       isFirstTree: true,
       unevalUpdates: [],
       metaWidgets: [],
-      shouldNotCloneUnevalTree: false,
     },
     oldConfigTree: ConfigTree,
   ): {
@@ -943,11 +941,8 @@ export default class DataTreeEvaluator {
     evalMetaUpdates: EvalMetaUpdates;
     staleMetaIds: string[];
   } {
-    const tree = options.shouldNotCloneUnevalTree
-      ? oldUnevalTree
-      : klona(oldUnevalTree);
     errorModifier.updateAsyncFunctions(
-      tree,
+      dataTree,
       this.getConfigTree(),
       this.dependencyMap,
     );
@@ -1173,7 +1168,7 @@ export default class DataTreeEvaluator {
               return set(currentTree, fullPropertyPath, evalPropertyValue);
           }
         },
-        tree,
+        dataTree,
       );
 
       return {
@@ -1186,7 +1181,7 @@ export default class DataTreeEvaluator {
         type: EvalErrorTypes.EVAL_TREE_ERROR,
         message: (error as Error).message,
       });
-      return { evaluatedTree: tree, evalMetaUpdates, staleMetaIds: [] };
+      return { evaluatedTree: dataTree, evalMetaUpdates, staleMetaIds: [] };
     }
   }
 
