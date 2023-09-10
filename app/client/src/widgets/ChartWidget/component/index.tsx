@@ -121,10 +121,12 @@ class ChartComponent extends React.Component<
 
   echartConfiguration: Record<string, any> = {};
   is3DChart = false;
+  prevProps: ChartComponentProps;
 
   constructor(props: ChartComponentProps) {
     super(props);
     this.echartsConfigurationBuilder = new EChartsConfigurationBuilder();
+    this.prevProps = {} as ChartComponentProps;
 
     this.state = {
       eChartsError: undefined,
@@ -170,7 +172,7 @@ class ChartComponent extends React.Component<
       this.isCustomEChart(this.props.chartType) &&
       is3DChart(this.props.customEChartConfig);
 
-    if (this.is3DChart) {
+    if (this.is3DChart && !equal(this.prevProps, this.props)) {
       this.echartsInstance?.dispose();
     }
 
@@ -279,7 +281,9 @@ class ChartComponent extends React.Component<
     }
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps: ChartComponentProps) {
+    this.prevProps = prevProps;
+
     if (
       this.isCustomFusionChart(this.props.chartType) &&
       !this.isCustomFusionChart(this.state.chartType)
