@@ -1164,7 +1164,14 @@ function* executePageLoadAction(pageAction: PageAction) {
           },
         },
       ]);
-
+      yield put(
+        updateActionData({
+          entityName: action.name,
+          dataPath: "data",
+          data: payload.body,
+        }),
+      );
+      yield take(ReduxActionTypes.SET_EVALUATED_TREE);
       yield put(
         executePluginActionError({
           actionId: pageAction.id,
@@ -1173,13 +1180,7 @@ function* executePageLoadAction(pageAction: PageAction) {
           data: payload,
         }),
       );
-      yield put(
-        updateActionData({
-          entityName: action.name,
-          dataPath: "data",
-          data: payload.body,
-        }),
-      );
+
       PerformanceTracker.stopAsyncTracking(
         PerformanceTransactionName.EXECUTE_ACTION,
         {
@@ -1229,19 +1230,22 @@ function* executePageLoadAction(pageAction: PageAction) {
         pageAction.id,
       );
       yield put(
-        executePluginActionSuccess({
-          id: pageAction.id,
-          response: payload,
-          isPageLoad: true,
-        }),
-      );
-      yield put(
         updateActionData({
           entityName: action.name,
           dataPath: "data",
           data: payload.body,
         }),
       );
+      yield take(ReduxActionTypes.SET_EVALUATED_TREE);
+
+      yield put(
+        executePluginActionSuccess({
+          id: pageAction.id,
+          response: payload,
+          isPageLoad: true,
+        }),
+      );
+
       yield take(ReduxActionTypes.SET_EVALUATED_TREE);
     }
   }
@@ -1390,19 +1394,21 @@ function* executePluginActionSaga(
     payload = createActionExecutionResponse(response);
 
     yield put(
-      executePluginActionSuccess({
-        id: actionId,
-        response: payload,
-      }),
-    );
-
-    yield put(
       updateActionData({
         entityName: pluginAction.name,
         dataPath: "data",
         data: payload.body,
       }),
     );
+    yield take(ReduxActionTypes.SET_EVALUATED_TREE);
+
+    yield put(
+      executePluginActionSuccess({
+        id: actionId,
+        response: payload,
+      }),
+    );
+
     // TODO: Plugins are not always fetched before on page load actions are executed.
     try {
       let plugin: Plugin | undefined;
@@ -1449,13 +1455,6 @@ function* executePluginActionSaga(
       }
       throw e;
     }
-
-    yield put(
-      executePluginActionSuccess({
-        id: actionId,
-        response: EMPTY_RESPONSE,
-      }),
-    );
     yield put(
       updateActionData({
         entityName: pluginAction.name,
@@ -1463,6 +1462,15 @@ function* executePluginActionSaga(
         data: EMPTY_RESPONSE.body,
       }),
     );
+    yield take(ReduxActionTypes.SET_EVALUATED_TREE);
+
+    yield put(
+      executePluginActionSuccess({
+        id: actionId,
+        response: EMPTY_RESPONSE,
+      }),
+    );
+
     if (e instanceof UserCancelledActionExecutionError) {
       // Case: user cancelled the request of file upload
       if (filePickerInstrumentation.numberOfFiles > 0) {
