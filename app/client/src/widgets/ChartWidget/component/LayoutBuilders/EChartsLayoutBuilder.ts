@@ -189,7 +189,7 @@ export class EChartsLayoutBuilder {
         return this.props.allowScroll;
       }
       if (configName == "legend") {
-        return this.needsLegend(this.props.seriesConfig);
+        return this.needsLegend(this.props.seriesConfigs);
       }
       if (configName == "xAxis") {
         return this.props.chartType != "PIE_CHART";

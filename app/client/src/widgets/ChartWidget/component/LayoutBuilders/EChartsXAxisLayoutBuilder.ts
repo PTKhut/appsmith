@@ -1,51 +1,108 @@
 import { LabelOrientation } from "widgets/ChartWidget/constants";
-import type { ChartType } from "widgets/ChartWidget/constants";
+import type { AllChartData, ChartType } from "widgets/ChartWidget/constants";
+import { getTextWidth, maxLabelLengthForChart } from "../helpers";
 
-export class EChartsXAxisLayoutBuilder {
+interface XAxisLayoutBuilderParams {
   labelOrientation: LabelOrientation;
   chartType: ChartType;
+  seriesConfigs: AllChartData;
+  font: string;
+}
+export class EChartsXAxisLayoutBuilder {
+  props: XAxisLayoutBuilderParams;
 
   gapBetweenLabelAndName = 10;
   defaultHeightForXAxisLabels = 30;
+  defaultHeightForRotatedLabels = 50;
   defaultHeightForXAxisName = 40;
 
-  constructor(labelOrientation: LabelOrientation, chartType: ChartType) {
-    this.labelOrientation = labelOrientation;
-    this.chartType = chartType;
+  constructor(props: XAxisLayoutBuilderParams) {
+    this.props = props;
   }
 
-  configForXAxis() {
+  configForXAxis(width: number) {
     return {
-      nameGap: this.heightForXAxisLabels(),
-      axisLabel: {
-        width: this.widthForXAxisLabels(),
-      },
+      nameGap: width - this.defaultHeightForXAxisName,
+      axisLabel: this.axisLabelConfig(width),
     };
   }
 
-  heightForXAxis = () => {
-    if (this.chartType == "PIE_CHART") {
-      return 0;
+  axisLabelConfig = (width: number) => {
+    if (this.props.labelOrientation == LabelOrientation.AUTO) {
+      return {};
+    } else {
+      return {
+        width:
+          width - this.defaultHeightForXAxisName - this.gapBetweenLabelAndName,
+        overflow: "truncate",
+      };
     }
-    return this.heightForXAxisLabels() + this.defaultHeightForXAxisName;
   };
 
-  heightForXAxisLabels = () => {
-    let labelsHeight: number = this.defaultHeightForXAxisLabels;
-    if (this.labelOrientation != LabelOrientation.AUTO) {
+  heightForXAxis = () => {
+    if (this.props.chartType == "PIE_CHART") {
+      return 0;
+    } else {
+      const result =
+        this.heightForXAxisLabels() + this.defaultHeightForXAxisName;
+      return result;
+    }
+  };
+
+  heightForXAxisLabels = (): number => {
+    let labelsHeight: number;
+
+    if (this.props.labelOrientation == LabelOrientation.AUTO) {
+      labelsHeight = this.defaultHeightForXAxisLabels;
+    } else {
       labelsHeight = this.widthForXAxisLabels();
     }
     return labelsHeight + this.gapBetweenLabelAndName;
   };
 
   widthForXAxisLabels = () => {
-    switch (this.labelOrientation) {
-      case LabelOrientation.SLANT: {
-        return 50;
+    switch (this.props.labelOrientation) {
+      case LabelOrientation.AUTO: {
+        return 0;
       }
       default: {
-        return 60;
+        const maxLengthLabel = maxLabelLengthForChart(
+          "xAxis",
+          this.props.chartType,
+          this.props.seriesConfigs,
+        );
+        return getTextWidth(maxLengthLabel, this.props.font);
       }
     }
   };
+
+  heightConfigForLabels = () => {
+    let minHeight = this.minHeightForLabels();
+    const maxHeight = this.heightForXAxis();
+    minHeight = minHeight > maxHeight ? maxHeight : minHeight;
+
+    return {
+      minHeight: minHeight,
+      maxHeight: this.heightForXAxis(),
+      height: minHeight,
+    };
+  };
+
+  minHeightForLabels() {
+    if (this.props.chartType == "PIE_CHART") {
+      return 0;
+    }
+
+    let labelsHeight: number;
+    if (this.props.labelOrientation == LabelOrientation.AUTO) {
+      labelsHeight = this.defaultHeightForXAxisLabels;
+    } else {
+      labelsHeight = this.defaultHeightForRotatedLabels;
+    }
+    return (
+      labelsHeight +
+      this.gapBetweenLabelAndName +
+      this.defaultHeightForXAxisName
+    );
+  }
 }
