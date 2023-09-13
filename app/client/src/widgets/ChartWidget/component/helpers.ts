@@ -1,5 +1,9 @@
 import { get } from "lodash";
-import type { ChartType, ChartSelectedDataPoint } from "../constants";
+import type {
+  ChartType,
+  ChartSelectedDataPoint,
+  AllChartData,
+} from "../constants";
 import { omit, cloneDeep } from "lodash";
 
 export const parseOnDataPointClickParams = (evt: any, chartType: ChartType) => {
@@ -59,4 +63,55 @@ export const parseOnDataPointClickForBasicCharts = (
     y: y,
     seriesTitle: seriesName,
   } as ChartSelectedDataPoint;
+};
+
+export const maxLabelLengthForChart = (
+  axisName: "xAxis" | "yAxis",
+  chartType: ChartType,
+  seriesConfigs: AllChartData,
+) => {
+  const labelKey = labelKeyForChart(axisName, chartType);
+  const seriesIDs = Object.keys(seriesConfigs);
+
+  let maxLabelLength = 0;
+  let maxLabelString = "";
+
+  for (const seriesID of seriesIDs) {
+    const datapoints = seriesConfigs[seriesID].data;
+    for (const datapoint of datapoints) {
+      const label: string = datapoint[labelKey].toString();
+      if (label.length > maxLabelLength) {
+        maxLabelLength = label.length;
+        maxLabelString = label;
+      }
+    }
+  }
+  return maxLabelString;
+};
+
+const labelKeyForChart = (
+  axisName: "xAxis" | "yAxis",
+  chartType: ChartType,
+): "x" | "y" => {
+  let labelKey: "x" | "y";
+
+  if (axisName == "xAxis") {
+    labelKey = chartType == "BAR_CHART" ? "y" : "x";
+  } else {
+    labelKey = chartType == "BAR_CHART" ? "x" : "y";
+  }
+  return labelKey;
+};
+
+export const getTextWidth = (text: string, font: string) => {
+  // re-use canvas object for better performance
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (context) {
+    context.font = font;
+    const metrics = context.measureText(text);
+    return metrics.width;
+  } else {
+    return 0;
+  }
 };
